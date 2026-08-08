@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dashboard</title>
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <h1>Live Analytics</h1>
+  <div id="visits"></div>
+  <div id="messages"></div>
+  <div id="images"></div>
+
+  <script>
+    const socket = io();
+
+    socket.on("new-visit", data => {
+      const el = document.getElementById("visits");
+      el.innerHTML += `<p>Visitor: ${data.ip} | ${data.country} - ${data.city} | ${data.device} | Page: ${data.page}</p>`;
+    });
+
+    socket.on("new-message", data => {
+      const el = document.getElementById("messages");
+      el.innerHTML += `<p>${data.time} - ${data.message}</p>`;
+    });
+
+    socket.on("new-image", data => {
+      const el = document.getElementById("images");
+      el.innerHTML += `<p>${data.time} - ${data.originalName}</p>`;
+    });
+  </script>
+</body>
+</html>

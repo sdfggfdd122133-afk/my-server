@@ -1,132 +1,167 @@
-require("dotenv").config();
+import "dotenv/config";
+import express from "express";
+import cors from "cors";
+import requestIp from "request-ip";
+import geoip from "geoip-lite";
+import { MongoClient, ServerApiVersion } from "mongodb";
+import morgan from "morgan";
+import multer from "multer";
+import http from "http";
+import { Server } from "socket.io";
+import { fileURLToPath } from "url";
+import path from "path";
 
-const express = require("express");
-const cors = require("cors");
-const requestIp = require("request-ip");
-const geoip = require("geoip-lite");
-const { MongoClient, ServerApiVersion } = require("mongodb");
-const morgan = require("morgan");
-const multer = require("multer");
-const http = require("http");
-const { Server } = require("socket.io");
+// محاكاة __dirname لتعمل مع صيغة ES Modules الحديثة
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+  cors: {
+    origin: "*", // يسمح باتصالات سريعة وآمنة من أي واجهة أمامية
+  },
+});
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
-/* ---------------- Middlewares ---------------- */
-
+/* ---------------- الأوساط البرمجية (Middlewares) ---------------- */
 app.use(cors());
 app.use(express.json());
 app.use(requestIp.mw());
-app.use(morgan("combined"));
-app.use(express.static("public"));
+app.use(morgan("dev")); // الـ dev Mode أفضل وأخف في القراءة داخل الترمينال المحلي
+app.use(express.static(path.join(__dirname, "public")));
 
-/* ---------------- رفع الصور ---------------- */
+/* ---------------- إعدادات رفع الصور المتقدمة ---------------- */
+// قمنا بتنظيم رفع الصور لكي تحتفظ بامتدادها الأصلي (مثل .png أو .jpg) بدلاً من الأسماء العشوائية المبهمة
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/");
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  },
+});
+const upload = multer({ storage });
 
-const upload = multer({ dest: "uploads/" });
-
-/* ---------------- قاعدة البيانات ---------------- */
-
+/* ---------------- الاتصال بقاعدة البيانات المركزية ---------------- */
 const client = new MongoClient(process.env.MONGO_URI, {
   serverApi: {
     version: ServerApiVersion.v1,
     strict: true,
-    deprecationErrors: true
-  }
+    deprecationErrors: true,
+  },
 });
 
 let db;
 
-async function connectDB() {
+async function startServer() {
   try {
     await client.connect();
-
     db = client.db("analyticsDB");
-
-    console.log("✅ MongoDB Connected");
+    console.log("✅ [Database]: Connected to MongoDB successfully.");
 
     server.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`🚀 [Server]: Operating smoothly on port ${PORT}`);
     });
-
   } catch (err) {
-    console.error("❌ DB Error:", err);
+    console.error("❌ [Critical Error]: Failed to start the backend system:", err);
+    process.exit(1); // إغلاق البرنامج بأمان إذا فشل الاتصال بقاعدة البيانات لمنع العمليات العشوائية
   }
 }
 
-connectDB();
+startServer();
 
-/* ---------------- تتبع الزوار ---------------- */
+/* ---------------- دالة حماية المسارات (Async Wrapper) ---------------- */
+// هذه الدالة السحرية تحمي السيرفر من الانهيار عند حدوث أي خطأ غير متوقع في قاعدة البيانات
+const asyncHandler = (fn) => (req, res, next) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
+};
 
-app.get("/track", async (req, res) => {
-  if (!db) return res.status(500).send("DB not connected");
+/* ---------------- تتبع الزوار (المسار المطور) ---------------- */
+app.get("/track", asyncHandler(async (req, res) => {
+  if (!db) return res.status(503).json({ error: "Database not ready" });
 
-  const ip = req.clientIp;
+  let ip = req.clientIp;
+  
+  // معالجة الـ Localhost أثناء فترة التجربة على جهازك الشخصي
+  if (ip === "::1" || ip === "127.0.0.1") {
+    ip = "8.8.8.8"; // نقوم بمحاكاة IP حقيقي (جوجل) لكي تعمل مكتبة الجغرافيات بنجاح أثناء التطوير
+  }
+
   const geo = geoip.lookup(ip);
 
   const data = {
     ip,
-    country: geo?.country || "Unknown",
-    city: geo?.city || "Unknown",
-    device: req.headers["user-agent"],
-    page: req.query.page || "Unknown",
-    time: new Date()
+    country: geo?.country || "Local/Unknown",
+    city: geo?.city || "Local/Unknown",
+    device: req.headers["user-agent"] || "Unknown Device",
+    page: req.query.page || "Home",
+    time: new Date(),
   };
 
   await db.collection("visits").insertOne(data);
-
   io.emit("new-visit", data);
 
-  res.send("Tracked");
-});
+  res.status(200).json({ status: "success", message: "Visitor tracked successfully" });
+}));
 
-/* ---------------- الرسائل ---------------- */
+/* ---------------- رسائل الزوار (المسار المطور) ---------------- */
+app.post("/message", asyncHandler(async (req, res) => {
+  if (!db) return res.status(503).json({ error: "Database not ready" });
 
-app.post("/message", async (req, res) => {
-  if (!db) return res.status(500).send("DB not connected");
-
-  const message = req.body.message;
+  const { message } = req.body;
+  if (!message) {
+    return res.status(400).json({ error: "Message field cannot be empty" });
+  }
 
   const data = {
     message,
     ip: req.clientIp,
-    time: new Date()
+    time: new Date(),
   };
 
   await db.collection("messages").insertOne(data);
-
   io.emit("new-message", data);
 
-  res.send("Message saved");
-});
+  res.status(201).json({ status: "success", message: "Message securely archived" });
+}));
 
-/* ---------------- رفع الصور ---------------- */
-
-app.post("/upload", upload.single("photo"), async (req, res) => {
-  if (!db) return res.status(500).send("DB not connected");
+/* ---------------- رفع الصور (المسار المطور) ---------------- */
+app.post("/upload", upload.single("photo"), asyncHandler(async (req, res) => {
+  if (!db) return res.status(503).json({ error: "Database not ready" });
 
   if (!req.file) {
-    return res.status(400).send("No file uploaded");
+    return res.status(400).json({ error: "No image file provided" });
   }
 
   const data = {
     filename: req.file.filename,
     originalName: req.file.originalname,
-    time: new Date()
+    path: req.file.path,
+    size: req.file.size,
+    time: new Date(),
   };
 
   await db.collection("images").insertOne(data);
-
   io.emit("new-image", data);
 
-  res.send("Image uploaded");
-});
+  res.status(201).json({ status: "success", message: "Image processed and uploaded", file: data });
+}));
 
-/* ---------------- لوحة التحكم ---------------- */
-
+/* ---------------- لوحة التحكم (Dashboard) ---------------- */
 app.get("/dashboard", (req, res) => {
-  res.sendFile(__dirname + "/public/dashboard.html");
+  res.sendFile(path.join(__dirname, "public", "dashboard.html"));
 });
+
+/* ---------------- نظام التحكم المركزي بالأخطاء ---------------- */
+// الملاذ الأخير لاستقبال أي خطأ في المشروع وعرضه للمطور دون أن يتوقف تطبيق الزوار
+app.use((err, req, res, next) => {
+  console.error("💥 [Runtime Error]:", err.message);
+  res.status(500).json({
+    status: "error",
+    message: "An internal system anomaly occurred. Engineers have been notified.",
+  });
+});
+

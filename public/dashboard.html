@@ -1,197 +1,866 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MUBARAK GROUP - Dashboard</title>
-    <!-- استيراد خط ويب حديث ومريح للعين من Google Fonts -->
-    <link rel="preconnect" href="https://googleapis.com">
-    <link rel="preconnect" href="https://gstatic.com" crossorigin>
-    <link href="https://googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>IDEA Dashboard</title>
+
+    <link
+        rel="stylesheet"
+        href="/dashboard/dashboard.css"
+    >
+
     <script src="/socket.io/socket.io.js"></script>
-    
-    <style>
-        * { box-sizing: border-box; }
-        body { 
-            margin: 0; 
-            font-family: 'Cairo', sans-serif !important; 
-            background-color: #0f172a; 
-            color: #f8fafc; 
-        }
-        
-        .header { 
-            background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%); 
-            padding: 22px 30px; 
-            border-bottom: 1px solid #334155; 
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .header h1 { margin: 0; font-size: 25px; color: #3b82f6; font-weight: 700; }
-        
-        .container { max-width: 1400px; margin: auto; padding: 25px; }
-        
-        /* تصميم الكروت الإحصائية الفخمة (Cards) وتأثير الـ Hover */
-        .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 25px; }
-        .stat-card { 
-            background: #1e293b; 
-            border-radius: 16px !important; 
-            padding: 22px; 
-            border: 1px solid #334155 !important; 
-            text-align: center; 
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02) !important;
-            transition: transform 0.3s ease, box-shadow 0.3s ease !important;
-        }
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(59, 130, 246, 0.2) !important;
-        }
-        .stat-value { font-size: 30px; font-weight: bold; margin-top: 10px; }
-        
-        .blue { color: #3b82f6; } .green { color: #10b981; } .orange { color: #f97316; }
-        
-        /* تجميل الأيقونات المستديرة والحركة التفاعلية */
-        .rounded-circle {
-            width: 55px;
-            height: 55px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 50%;
-            margin: 0 auto;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.3s ease;
-        }
-        .stat-card:hover .rounded-circle {
-            transform: scale(1.1) rotate(5deg);
-        }
-
-        .section { background: #1e293b; border-radius: 14px; padding: 20px; border: 1px solid #334155; margin-bottom: 25px; }
-        .section-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; border-bottom: 1px solid #334155; padding-bottom: 10px; color: #cbd5e1; }
-        
-        table { width: 100%; border-collapse: collapse; text-align: right; }
-        th, td { padding: 12px 15px; border-bottom: 1px solid #334155; font-size: 14px; }
-        th { background: #0f172a; color: #3b82f6; font-weight: 700; }
-        
-        .btn-delete { background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; font-family: 'Cairo', sans-serif; }
-        .btn-upload { background: #10b981; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; font-family: 'Cairo', sans-serif; }
-        .btn-action { border: none; padding: 5px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; width: 100%; margin-bottom: 4px; color: white; font-family: 'Cairo', sans-serif; }
-        .btn-top { background: #3b82f6; } .btn-bottom { background: #f59e0b; }
-        
-        input[type="text"], input[type="file"] { width: 100%; padding: 11px; margin-bottom: 15px; background: #0f172a; border: 1px solid #475569; color: white; border-radius: 6px; font-family: 'Cairo', sans-serif; }
-        .img-card { background: #0f172a; padding: 10px; border-radius: 8px; border: 1px solid #334155; text-align: center; display: flex; flex-direction: column; justify-content: space-between; }
-        .img-card img { width: 100%; height: 110px; object-fit: cover; border-radius: 6px; margin-bottom: 8px; }
-        .status-badge { font-size: 10px; padding: 2px 5px; border-radius: 3px; display: inline-block; margin-bottom: 6px; font-weight: bold; }
-
-        /* 🟢 تأثير إضاءة نبضات حالة السيرفر (Pulse Effect) */
-        #server-status {
-            position: relative;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-            font-weight: bold;
-            color: #10b981;
-        }
-        #server-status::before {
-            content: '';
-            width: 10px;
-            height: 10px;
-            background-color: #10b981;
-            border-radius: 50%;
-            display: inline-block;
-            animation: pulse 1.8s infinite;
-        }
-        @keyframes pulse {
-            0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-            70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
-            100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-        }
-    </style>
 </head>
+
 <body>
-    <header class="header">
-        <h1>لوحة التحكم وتحليل حركة البيانات - MUBARAK GROUP</h1>
-        <!-- تشغيل ميزة حالة السيرفر المضيئة تفاعلياً -->
-        <div id="server-status">النظام يعمل ومحمي سحابياً</div>
-    </header>
-    <main class="container">
-        <div class="stats">
-            <div class="stat-card"><div class="rounded-circle">👥</div><div>المتصلون الآن</div><div id="onlineCount" class="stat-value blue">0</div></div>
-            <div class="stat-card"><div class="rounded-circle">📈</div><div>إجمالي الزيارات النشطة</div><div id="totalVisits" class="stat-value green">0</div></div>
-            <div class="stat-card"><div class="rounded-circle">📬</div><div>الطلبات المستلمة</div><div id="totalMessages" class="stat-value orange">0</div></div>
-        </div>
 
-        <div class="section">
-            <div class="section-title">📊 سجل الزيارات المباشر ورصد المواقع الجغرافية (تخطي حواجب الحماية نشط)</div>
-            <div style="overflow-x: auto;">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>التاريخ والوقت</th>
-                            <th>عنوان الشبكة (IP Address)</th>
-                            <th>الموقع الجغرافي (الدولة/المدينة)</th>
-                            <th>الصفحة المطلوبة</th>
-                        </tr>
-                    </thead>
-                    <tbody id="visitsTableBody"></tbody>
-                </table>
+<div class="dashboard-shell">
+
+    <!-- =====================================================
+         SIDEBAR
+    ====================================================== -->
+
+    <aside class="sidebar">
+
+        <div class="brand">
+
+            <div class="brand-logo">
+                IDEA
             </div>
+
+            <div class="brand-subtitle">
+                DASHBOARD
+            </div>
+
+            <div class="brand-line"></div>
+
         </div>
 
-        <div class="section">
-            <div class="section-title">📤 إدارة ورفع مستندات صور المشاريع</div>
-            <div style="display: grid; grid-template-columns: 1fr 2.5fr; gap: 20px;">
-                <form id="dashUploadForm" enctype="multipart/form-data" style="background: #0f172a; padding: 20px; border-radius: 8px; border: 1px solid #334155; height: fit-content;">
-                    <label style="display:block; margin-bottom:8px;">إرفاق ملف الصورة:</label>
-                    <input type="file" id="dashPhotoInput" accept="image/*" required>
-                    <label style="display:block; margin-bottom:8px;">وصف أو عنوان المشروع:</label>
-                    <input type="text" id="dashDescInput" placeholder="اكتب وصف الصورة المستهدفة..." required>
-                    <button type="submit" class="btn-upload">رفع الصورة إلى المخزن</button>
+
+        <nav class="navigation">
+
+            <button
+                class="nav-link active"
+                data-section="overview"
+            >
+                <span class="nav-icon">⌂</span>
+                <span
+                    data-ar="الرئيسية"
+                    data-en="Overview"
+                >
+                    الرئيسية
+                </span>
+            </button>
+
+
+            <button
+                class="nav-link"
+                data-section="images"
+            >
+                <span class="nav-icon">▣</span>
+                <span
+                    data-ar="إدارة الصور"
+                    data-en="Images"
+                >
+                    إدارة الصور
+                </span>
+            </button>
+
+
+            <button
+                class="nav-link"
+                data-section="messages"
+            >
+                <span class="nav-icon">✉</span>
+                <span
+                    data-ar="الرسائل"
+                    data-en="Messages"
+                >
+                    الرسائل
+                </span>
+            </button>
+
+        </nav>
+
+
+        <div class="sidebar-bottom">
+
+            <div
+                id="connectionIndicator"
+                class="connection-indicator"
+            >
+                <span class="status-dot"></span>
+
+                <span
+                    data-ar="متصل"
+                    data-en="Connected"
+                >
+                    متصل
+                </span>
+            </div>
+
+
+            <button
+                id="languageToggle"
+                class="language-button"
+            >
+                🌐 English
+            </button>
+
+        </div>
+
+    </aside>
+
+
+    <!-- =====================================================
+         MAIN
+    ====================================================== -->
+
+    <main class="main-content">
+
+
+        <!-- TOP BAR -->
+
+        <header class="topbar">
+
+            <div>
+
+                <div
+                    class="topbar-title"
+                    data-ar="لوحة تحكم IDEA"
+                    data-en="IDEA Dashboard"
+                >
+                    لوحة تحكم IDEA
+                </div>
+
+                <div
+                    class="topbar-subtitle"
+                    data-ar="إدارة الموقع والمحتوى"
+                    data-en="Manage your website and content"
+                >
+                    إدارة الموقع والمحتوى
+                </div>
+
+            </div>
+
+
+            <div class="topbar-actions">
+
+                <button
+                    id="refreshAll"
+                    class="glass-button"
+                >
+                    ↻
+                    <span
+                        data-ar="تحديث"
+                        data-en="Refresh"
+                    >
+                        تحديث
+                    </span>
+                </button>
+
+            </div>
+
+        </header>
+
+
+        <!-- =================================================
+             OVERVIEW
+        ================================================== -->
+
+        <section
+            id="section-overview"
+            class="dashboard-section active-section"
+        >
+
+            <div class="section-heading">
+
+                <div>
+
+                    <h1
+                        data-ar="نظرة عامة"
+                        data-en="Overview"
+                    >
+                        نظرة عامة
+                    </h1>
+
+                    <p
+                        data-ar="متابعة حالة الموقع والمحتوى."
+                        data-en="Monitor your website and content."
+                    >
+                        متابعة حالة الموقع والمحتوى.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="stats-grid">
+
+
+                <div class="stat-card">
+
+                    <div class="stat-icon">
+                        ◉
+                    </div>
+
+                    <div class="stat-info">
+
+                        <span
+                            class="stat-label"
+                            data-ar="حالة الخادم"
+                            data-en="Server Status"
+                        >
+                            حالة الخادم
+                        </span>
+
+                        <strong
+                            id="serverStatus"
+                            class="stat-value online"
+                        >
+                            Online
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-icon">
+                        ▣
+                    </div>
+
+                    <div class="stat-info">
+
+                        <span
+                            class="stat-label"
+                            data-ar="عدد الصور"
+                            data-en="Images"
+                        >
+                            عدد الصور
+                        </span>
+
+                        <strong
+                            id="imageCount"
+                            class="stat-value"
+                        >
+                            0
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-icon">
+                        ◈
+                    </div>
+
+                    <div class="stat-info">
+
+                        <span
+                            class="stat-label"
+                            data-ar="صور الصفحة الرئيسية"
+                            data-en="Homepage Images"
+                        >
+                            صور الصفحة الرئيسية
+                        </span>
+
+                        <strong
+                            id="homepageImageCount"
+                            class="stat-value"
+                        >
+                            0
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <div class="stat-icon">
+                        ⚡
+                    </div>
+
+                    <div class="stat-info">
+
+                        <span
+                            class="stat-label"
+                            data-ar="الاتصال المباشر"
+                            data-en="Live Connection"
+                        >
+                            الاتصال المباشر
+                        </span>
+
+                        <strong
+                            id="socketStatus"
+                            class="stat-value online"
+                        >
+                            Connected
+                        </strong>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- SERVER CARD -->
+
+            <div class="glass-card server-card">
+
+                <div class="card-header">
+
+                    <div>
+
+                        <h2
+                            data-ar="حالة النظام"
+                            data-en="System Status"
+                        >
+                            حالة النظام
+                        </h2>
+
+                        <p
+                            data-ar="الاتصال الحالي مع الخادم."
+                            data-en="Current connection with the server."
+                        >
+                            الاتصال الحالي مع الخادم.
+                        </p>
+
+                    </div>
+
+                    <span
+                        id="serverBadge"
+                        class="badge badge-success"
+                    >
+                        ONLINE
+                    </span>
+
+                </div>
+
+
+                <div class="server-grid">
+
+                    <div class="server-item">
+
+                        <span
+                            data-ar="API الصور"
+                            data-en="Images API"
+                        >
+                            API الصور
+                        </span>
+
+                        <strong id="apiStatus">
+                            Checking...
+                        </strong>
+
+                    </div>
+
+
+                    <div class="server-item">
+
+                        <span
+                            data-ar="Socket.IO"
+                            data-en="Socket.IO"
+                        >
+                            Socket.IO
+                        </span>
+
+                        <strong id="socketInfo">
+                            Connected
+                        </strong>
+
+                    </div>
+
+
+                    <div class="server-item">
+
+                        <span
+                            data-ar="آخر تحديث"
+                            data-en="Last Update"
+                        >
+                            آخر تحديث
+                        </span>
+
+                        <strong id="lastUpdate">
+                            —
+                        </strong>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- QUICK ACTIONS -->
+
+            <div class="glass-card">
+
+                <div class="card-header">
+
+                    <div>
+
+                        <h2
+                            data-ar="إجراءات سريعة"
+                            data-en="Quick Actions"
+                        >
+                            إجراءات سريعة
+                        </h2>
+
+                    </div>
+
+                </div>
+
+
+                <div class="quick-actions">
+
+                    <button
+                        class="quick-button"
+                        data-open-section="images"
+                    >
+                        <span>▣</span>
+
+                        <span
+                            data-ar="إدارة الصور"
+                            data-en="Manage Images"
+                        >
+                            إدارة الصور
+                        </span>
+
+                    </button>
+
+
+                    <button
+                        class="quick-button"
+                        id="quickRefresh"
+                    >
+                        <span>↻</span>
+
+                        <span
+                            data-ar="تحديث البيانات"
+                            data-en="Refresh Data"
+                        >
+                            تحديث البيانات
+                        </span>
+
+                    </button>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             IMAGES
+        ================================================== -->
+
+        <section
+            id="section-images"
+            class="dashboard-section"
+        >
+
+            <div class="section-heading">
+
+                <div>
+
+                    <h1
+                        data-ar="إدارة الصور"
+                        data-en="Image Management"
+                    >
+                        إدارة الصور
+                    </h1>
+
+                    <p
+                        data-ar="أضف الصور التي ستظهر في الصفحة الرئيسية."
+                        data-en="Add images that will appear on the homepage."
+                    >
+                        أضف الصور التي ستظهر في الصفحة الرئيسية.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- UPLOAD -->
+
+            <div class="glass-card upload-card">
+
+                <div class="card-header">
+
+                    <div>
+
+                        <h2
+                            data-ar="إضافة صورة جديدة"
+                            data-en="Add New Image"
+                        >
+                            إضافة صورة جديدة
+                        </h2>
+
+                        <p
+                            data-ar="الصورة ستظهر تلقائيًا في الصفحة الرئيسية."
+                            data-en="The image will automatically appear on the homepage."
+                        >
+                            الصورة ستظهر تلقائيًا في الصفحة الرئيسية.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <form id="uploadForm">
+
+
+                    <div class="upload-grid">
+
+
+                        <div class="form-field">
+
+                            <label
+                                for="imageFile"
+                                data-ar="اختر الصورة"
+                                data-en="Choose Image"
+                            >
+                                اختر الصورة
+                            </label>
+
+                            <input
+                                id="imageFile"
+                                name="image"
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp,image/gif"
+                                required
+                            >
+
+                        </div>
+
+
+                        <div class="form-field">
+
+                            <label
+                                for="imageDescription"
+                                data-ar="وصف الصورة"
+                                data-en="Image Description"
+                            >
+                                وصف الصورة
+                            </label>
+
+                            <input
+                                id="imageDescription"
+                                name="desc"
+                                type="text"
+                                maxlength="250"
+                                placeholder="اكتب وصف الصورة..."
+                            >
+
+                        </div>
+
+
+                    </div>
+
+
+                    <div class="upload-preview-wrap">
+
+                        <div
+                            id="uploadPreview"
+                            class="upload-preview"
+                        >
+
+                            <div class="preview-empty">
+
+                                <span>
+                                    ◫
+                                </span>
+
+                                <p
+                                    data-ar="معاينة الصورة"
+                                    data-en="Image Preview"
+                                >
+                                    معاينة الصورة
+                                </p>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="upload-actions">
+
+                        <button
+                            type="submit"
+                            id="uploadButton"
+                            class="primary-button"
+                        >
+                            <span>＋</span>
+
+                            <span
+                                data-ar="رفع الصورة"
+                                data-en="Upload Image"
+                            >
+                                رفع الصورة
+                            </span>
+
+                        </button>
+
+
+                        <button
+                            type="button"
+                            id="clearUpload"
+                            class="secondary-button"
+                        >
+                            <span>×</span>
+
+                            <span
+                                data-ar="مسح"
+                                data-en="Clear"
+                            >
+                                مسح
+                            </span>
+
+                        </button>
+
+                    </div>
+
+
+                    <div
+                        id="uploadStatus"
+                        class="action-status"
+                        aria-live="polite"
+                    ></div>
+
                 </form>
-                <div id="dashImagesList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; overflow-y: auto; max-height: 350px; background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155;"></div>
-            </div>
-        </div>
 
-        <div class="section">
-            <div class="section-title">💬 الرسائل والبيانات الواردة حياً</div>
-            <table>
-                <thead><tr><th>رقم التليفون</th><th>الرسالة</th><th>الدولة</th><th>المدينة</th><th>الوقت</th><th>الإجراءات</th></tr></thead>
-                <tbody id="messagesTableBody"></tbody>
-            </table>
-        </div>
+            </div>
+
+
+            <!-- IMAGE LIST -->
+
+            <div class="glass-card">
+
+                <div class="card-header">
+
+                    <div>
+
+                        <h2
+                            data-ar="الصور الحالية"
+                            data-en="Current Images"
+                        >
+                            الصور الحالية
+                        </h2>
+
+                        <p
+                            data-ar="هذه الصور هي التي يستطيع الموقع عرضها."
+                            data-en="These are the images available to the website."
+                        >
+                            هذه الصور هي التي يستطيع الموقع عرضها.
+                        </p>
+
+                    </div>
+
+
+                    <button
+                        id="refreshImages"
+                        class="glass-button"
+                    >
+                        ↻
+                        <span
+                            data-ar="تحديث"
+                            data-en="Refresh"
+                        >
+                            تحديث
+                        </span>
+                    </button>
+
+                </div>
+
+
+                <div
+                    id="imagesGrid"
+                    class="images-grid"
+                >
+
+                    <div class="empty-state">
+
+                        <span>
+                            ◫
+                        </span>
+
+                        <p
+                            data-ar="جاري تحميل الصور..."
+                            data-en="Loading images..."
+                        >
+                            جاري تحميل الصور...
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             MESSAGES
+        ================================================== -->
+
+        <section
+            id="section-messages"
+            class="dashboard-section"
+        >
+
+            <div class="section-heading">
+
+                <div>
+
+                    <h1
+                        data-ar="الرسائل"
+                        data-en="Messages"
+                    >
+                        الرسائل
+                    </h1>
+
+                    <p
+                        data-ar="قسم الرسائل سيتم ربطه ببيانات الموقع."
+                        data-en="Messages will be connected to the website data."
+                    >
+                        قسم الرسائل سيتم ربطه ببيانات الموقع.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="glass-card empty-messages">
+
+                <div class="empty-icon">
+                    ✉
+                </div>
+
+                <h2
+                    data-ar="إدارة الرسائل"
+                    data-en="Message Management"
+                >
+                    إدارة الرسائل
+                </h2>
+
+                <p
+                    data-ar="سنربط هذا القسم لاحقًا مباشرة مع الرسائل الواردة من الصفحة الرئيسية."
+                    data-en="This section will later connect directly to messages received from the homepage."
+                >
+                    سنربط هذا القسم لاحقًا مباشرة مع الرسائل الواردة من الصفحة الرئيسية.
+                </p>
+
+            </div>
+
+        </section>
+
+
+        <!-- FOOTER -->
+
+        <footer class="dashboard-footer">
+
+            <span>
+                IDEA
+            </span>
+
+            <span>
+                DREAM · BUILD · GROW
+            </span>
+
+        </footer>
+
     </main>
 
-    <script>
-        const socket = io();
-        let visitsCount = 0, messagesCount = 0;
+</div>
 
-        socket.on("online-users", (c) => { document.getElementById("onlineCount").textContent = c; });
-        
-        socket.on("new-visit", (data) => {
-            visitsCount++; 
-            document.getElementById("totalVisits").textContent = visitsCount;
-            const rowHtml = `
-                <tr>
-                    <td>${new Date(data.time).toLocaleString('ar-EG')}</td>
-                    <td style="color:#3b82f6; font-weight:bold;">${data.ip}</td>
-                    <td>${data.country} / ${data.city}</td>
-                    <td><span style="color:#10b981;">${data.page}</span></td>
-                </tr>
-            `;
-            document.getElementById("visitsTableBody").insertAdjacentHTML('afterbegin', rowHtml);
-        });
 
-        async function loadImages() {
-            const res = await fetch("/api/images");
-            const images = await res.json();
-            const list = document.getElementById("dashImagesList");
-            list.innerHTML = "";
-            images.forEach(img => {
-                let currentPos = img.position === "top" ? "رئيسية (فوق)" : (img.position === "bottom" ? "معرض (تحت)" : "غير مسكنة");
-                let badgeColor = img.position === "top" ? "#3b82f6" : (img.position === "bottom" ? "#f59e0b" : "#475569");
-                list.insertAdjacentHTML('beforeend', `
-                    <div class="img-card" id="dash-img-${img._id}">
-                        <img src="${img.path}">
+<!-- DELETE MODAL -->
 
-                        
+<div
+    id="deleteModal"
+    class="modal-overlay"
+    hidden
+>
+
+    <div class="modal-card">
+
+        <div class="modal-icon">
+            !
+        </div>
+
+        <h2
+            data-ar="حذف الصورة؟"
+            data-en="Delete Image?"
+        >
+            حذف الصورة؟
+        </h2>
+
+        <p
+            data-ar="سيتم حذف الصورة من الخادم، ولن تظهر في الصفحة الرئيسية."
+            data-en="The image will be removed from the server and from the homepage."
+        >
+            سيتم حذف الصورة من الخادم، ولن تظهر في الصفحة الرئيسية.
+        </p>
+
+
+        <div class="modal-actions">
+
+            <button
+                id="cancelDelete"
+                class="secondary-button"
+            >
+                <span
+                    data-ar="إلغاء"
+                    data-en="Cancel"
+                >
+                    إلغاء
+                </span>
+            </button>
+
+
+            <button
+                id="confirmDelete"
+                class="danger-button"
+            >
+                <span
+                    data-ar="حذف"
+                    data-en="Delete"
+                >
+                    حذف
+                </span>
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script src="/dashboard/dashboard.js"></script>
+
+</body>
+</html>

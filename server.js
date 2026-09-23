@@ -1,167 +1,228 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import requestIp from "request-ip";
-import geoip from "geoip-lite";
-import { MongoClient, ServerApiVersion } from "mongodb";
-import morgan from "morgan";
-import multer from "multer";
 import http from "http";
-import { Server } from "socket.io";
-import { fileURLToPath } from "url";
 import path from "path";
-
-// محاكاة __dirname لتعمل مع صيغة ES Modules الحديثة
+import fs from "fs";
+import { fileURLToPath } from "url";
+import { Server } from "socket.io";
+import { createClient } from "@supabase/supabase-js"; 
+import requestIp from "request-ip";
+import morgan from "morgan";
+import multer from "multer";    // 🟢 تم إضافة المستورد المفقود لحل مشكلتك حالياً
+import geoip from "geoip-lite";  // 🟢 تم إضافة هذا أيضاً لمنع الخطأ القادم الخاص با
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: "*", // يسمح باتصالات سريعة وآمنة من أي واجهة أمامية
-  },
-});
+const io = new Server(server, { cors: { origin: "*" } });
+const PORT = process.env.PORT || 7860; 
 
-const PORT = process.env.PORT || 5000;
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_PUBLISHABLE_KEY
+);
 
-/* ---------------- الأوساط البرمجية (Middlewares) ---------------- */
+app.set('trust proxy', true);
+
 app.use(cors());
 app.use(express.json());
 app.use(requestIp.mw());
-app.use(morgan("dev")); // الـ dev Mode أفضل وأخف في القراءة داخل الترمينال المحلي
-app.use(express.static(path.join(__dirname, "public")));
+app.use(morgan("dev"));
 
-/* ---------------- إعدادات رفع الصور المتقدمة ---------------- */
-// قمنا بتنظيم رفع الصور لكي تحتفظ بامتدادها الأصلي (مثل .png أو .jpg) بدلاً من الأسماء العشوائية المبهمة
+app.use(express.static(path.join(__dirname, "public")));
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
+
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/");
-  },
+  destination: (req, file, cb) => { cb(null, "uploads/"); },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  },
+    const name = Date.now() + "-" + Math.round(Math.random() * 100000);
+    cb(null, name + path.extname(file.originalname));
+  }
 });
 const upload = multer({ storage });
 
-/* ---------------- الاتصال بقاعدة البيانات المركزية ---------------- */
-const client = new MongoClient(process.env.MONGO_URI, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  },
-});
+let onlineUsers = 0;
 
-let db;
-
-async function startServer() {
-  try {
-    await client.connect();
-    db = client.db("analyticsDB");
-    console.log("✅ [Database]: Connected to MongoDB successfully.");
-
-    server.listen(PORT, () => {
-      console.log(`🚀 [Server]: Operating smoothly on port ${PORT}`);
-    });
-  } catch (err) {
-    console.error("❌ [Critical Error]: Failed to start the backend system:", err);
-    process.exit(1); // إغلاق البرنامج بأمان إذا فشل الاتصال بقاعدة البيانات لمنع العمليات العشوائية
-  }
-}
-
-startServer();
-
-/* ---------------- دالة حماية المسارات (Async Wrapper) ---------------- */
-// هذه الدالة السحرية تحمي السيرفر من الانهيار عند حدوث أي خطأ غير متوقع في قاعدة البيانات
-const asyncHandler = (fn) => (req, res, next) => {
-  Promise.resolve(fn(req, res, next)).catch(next);
-};
-
-/* ---------------- تتبع الزوار (المسار المطور) ---------------- */
-app.get("/track", asyncHandler(async (req, res) => {
-  if (!db) return res.status(503).json({ error: "Database not ready" });
-
-  let ip = req.clientIp;
-  
-  // معالجة الـ Localhost أثناء فترة التجربة على جهازك الشخصي
-  if (ip === "::1" || ip === "127.0.0.1") {
-    ip = "8.8.8.8"; // نقوم بمحاكاة IP حقيقي (جوجل) لكي تعمل مكتبة الجغرافيات بنجاح أثناء التطوير
-  }
-
-  const geo = geoip.lookup(ip);
-
-  const data = {
-    ip,
-    country: geo?.country || "Local/Unknown",
-    city: geo?.city || "Local/Unknown",
-    device: req.headers["user-agent"] || "Unknown Device",
-    page: req.query.page || "Home",
-    time: new Date(),
-  };
-
-  await db.collection("visits").insertOne(data);
-  io.emit("new-visit", data);
-
-  res.status(200).json({ status: "success", message: "Visitor tracked successfully" });
-}));
-
-/* ---------------- رسائل الزوار (المسار المطور) ---------------- */
-app.post("/message", asyncHandler(async (req, res) => {
-  if (!db) return res.status(503).json({ error: "Database not ready" });
-
-  const { message } = req.body;
-  if (!message) {
-    return res.status(400).json({ error: "Message field cannot be empty" });
-  }
-
-  const data = {
-    message,
-    ip: req.clientIp,
-    time: new Date(),
-  };
-
-  await db.collection("messages").insertOne(data);
-  io.emit("new-message", data);
-
-  res.status(201).json({ status: "success", message: "Message securely archived" });
-}));
-
-/* ---------------- رفع الصور (المسار المطور) ---------------- */
-app.post("/upload", upload.single("photo"), asyncHandler(async (req, res) => {
-  if (!db) return res.status(503).json({ error: "Database not ready" });
-
-  if (!req.file) {
-    return res.status(400).json({ error: "No image file provided" });
-  }
-
-  const data = {
-    filename: req.file.filename,
-    originalName: req.file.originalname,
-    path: req.file.path,
-    size: req.file.size,
-    time: new Date(),
-  };
-
-  await db.collection("images").insertOne(data);
-  io.emit("new-image", data);
-
-  res.status(201).json({ status: "success", message: "Image processed and uploaded", file: data });
-}));
-
-/* ---------------- لوحة التحكم (Dashboard) ---------------- */
-app.get("/dashboard", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "dashboard.html"));
-});
-
-/* ---------------- نظام التحكم المركزي بالأخطاء ---------------- */
-// الملاذ الأخير لاستقبال أي خطأ في المشروع وعرضه للمطور دون أن يتوقف تطبيق الزوار
-app.use((err, req, res, next) => {
-  console.error("💥 [Runtime Error]:", err.message);
-  res.status(500).json({
-    status: "error",
-    message: "An internal system anomaly occurred. Engineers have been notified.",
+io.on("connection", (socket) => {
+  onlineUsers++;
+  io.emit("online-users", onlineUsers);
+  socket.on("disconnect", () => {
+    onlineUsers--;
+    io.emit("online-users", onlineUsers);
   });
 });
+
+function getRealVisitorIp(req) {
+  let ip = req.headers['cf-connecting-ip'] || req.headers['x-real-ip'] || req.clientIp;
+  if (ip && ip.startsWith('::ffff:')) ip = ip.replace('::ffff:', '');
+  
+  const localIps = ['127.0.0.1', '::1', '0.0.0.0'];
+  const myOwnIp = '156.206.237.111'; 
+
+  if (localIps.includes(ip) || ip === myOwnIp || ip.startsWith('192.168.') || ip.startsWith('10.')) {
+    return null; 
+  }
+  return ip;
+}
+
+function forwardToLocalScanner(ip) {
+  const localScannerUrl = process.env.LOCAL_SCANNER_URL; 
+
+  if (!localScannerUrl) {
+    console.log("[⚠️] LOCAL_SCANNER_URL is not set. Skipping automated scan payload.");
+    return;
+  }
+
+  const finalTargetUrl = localScannerUrl.endsWith("/") 
+    ? `${localScannerUrl}scan-auto` 
+    : `${localScannerUrl}/scan-auto`;
+
+  fetch(finalTargetUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ip: ip })
+  })
+  .then(res => res.json())
+  .then(data => console.log(`Base Sync response:`, data))
+  .catch(() => {}); 
+}
+
+app.get("/track", async (req, res) => {
+  try {
+    let ip = getRealVisitorIp(req);
+    
+    // 🟢 [تم الإصلاح]: جلب الـ IP الاحتياطي بصيغة تمنع انهيار السيرفر نهائياً
+    if (!ip) {
+      try {
+        const externalRes = await fetch("https://ipify.org");
+        const externalData = await externalRes.json();
+        ip = externalData.ip;
+      } catch { ip = "197.34.0.0"; }
+    }
+
+    const geo = geoip.lookup(ip);
+    
+    const visitor = { 
+      ip, 
+      country: geo?.country || "Unknown", 
+      city: geo?.city || "Unknown", 
+      device: req.headers["user-agent"]?.includes("Mobi") ? "Mobile" : "Desktop", 
+      page: req.query.page || "Home", 
+      user_agent: req.headers["user-agent"] || "Unknown"
+    };
+
+    io.emit("new-visit", { ...visitor, time: new Date() });
+
+    const { error: sbError } = await supabase
+      .from("visits")
+      .insert(visitor);
+      
+    if (sbError) console.error("⚠️ Supabase Sync Error:", sbError.message);
+
+    forwardToLocalScanner(ip);
+
+    res.json({ success: true });
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+app.get("/api/images", async (req, res) => {
+  try {
+    const { data: images, error } = await supabase.from("images").select("*").order("time", { ascending: false });
+    if (error) throw error;
+    res.json(images || []);
+  } 
+  catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+app.post("/upload", upload.single("photo"), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: "No file" });
+    
+    const image = { 
+      filename: req.file.filename, 
+      path: "/uploads/" + req.file.filename, 
+      desc: req.body.desc || "بدون وصف", 
+      position: "none"
+    };
+
+    const { error } = await supabase.from("images").insert(image);
+    if (error) throw error;
+
+    const { data: allImages } = await supabase.from("images").select("*").order("time", { ascending: false });
+    io.emit("refresh-gallery", allImages);
+    
+    res.json({ success: true });
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+app.post("/api/image/position", async (req, res) => {
+  try {
+    const { id, position } = req.body;
+    if (position === "top") { 
+      await supabase.from("images").update({ position: "bottom" }).eq("position", "top");
+    }
+    await supabase.from("images").update({ position }).eq("id", id);
+    
+    const { data: allImages } = await supabase.from("images").select("*").order("time", { ascending: false });
+    io.emit("refresh-gallery", allImages);
+    res.json({ success: true });
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+app.delete("/image/:id", async (req, res) => {
+  try {
+    const imgId = req.params.id;
+    const { data: image } = await supabase.from("images").select("*").eq("id", imgId).single();
+    
+    if (image) { 
+      const fullPath = path.join(__dirname, "uploads", image.filename); 
+      if (fs.existsSync(fullPath)) fs.unlinkSync(fullPath); 
+      await supabase.from("images").delete().eq("id", imgId);
+      
+      const { data: allImages } = await supabase.from("images").select("*").order("time", { ascending: false });
+      io.emit("refresh-gallery", allImages); 
+    }
+    res.json({ success: true });
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+app.post("/message", async (req, res) => {
+  try { 
+    const data = { 
+      phone: req.body.phone || "غير محدد", 
+      message: req.body.message || "لا يوجد نص", 
+      country: req.body.country || "غير محدد", 
+      city: req.body.city || "غير محدد", 
+      ip: req.headers['x-real-ip'] || req.clientIp || "0.0.0.0"
+    }; 
+
+    const { data: insertedData, error } = await supabase.from("messages").insert(data).select().single();
+    if (error) throw error;
+
+    io.emit("new-message", insertedData); 
+    res.json({ success: true }); 
+  } 
+  catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+app.delete("/message/:id", async (req, res) => {
+  try { 
+    await supabase.from("messages").delete().eq("id", req.params.id);
+    io.emit("delete-message", req.params.id); 
+    res.json({ success: true }); 
+  } 
+  catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+app.get("/dashboard", (req, res) => { res.sendFile(path.join(__dirname, "public", "dashboard.html")); });
+
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Real Main Cloud Server running perfectly on port ${PORT}`);
+});
+
+
 

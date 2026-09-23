@@ -14,19 +14,19 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@supabase/supabase-js": "^2.116.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "geoip-lite": "^2.0.0",
     "mongodb": "^7.1.0",
-    "mongoose": "^9.3.0",
+    "mongoose": "^9.9.3",
     "morgan": "^1.10.1",
     "multer": "^2.1.1",
     "request-ip": "^3.3.0",
-    "socket.io": "^4.8.3"
+    "socket.io": "^4.8.1"
   },
   "devDependencies": {
-    "@eslint/css": "^1.4.0",
     "@eslint/json": "^2.0.1",
     "@eslint/markdown": "^8.0.3",
     "eslint": "^10.8.1",

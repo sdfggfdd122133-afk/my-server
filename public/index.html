@@ -1,32 +1,2254 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <title>Dashboard</title>
-  <script src="/socket.io/socket.io.js"></script>
-</head>
-<body>
-  <h1>Live Analytics</h1>
-  <div id="visits"></div>
-  <div id="messages"></div>
-  <div id="images"></div>
 
-  <script>
+<html lang="ar" dir="rtl">
+
+<head>
+
+```
+<meta charset="UTF-8">
+
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0">
+
+<title>IDBA | Dream • Build • Grow</title>
+
+<script src="/socket.io/socket.io.js"></script>
+
+<style>
+
+    /* =====================================================
+       RESET
+    ===================================================== */
+
+    * {
+        box-sizing: border-box;
+    }
+
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+
+        margin: 0;
+        min-height: 100vh;
+
+        font-family:
+            "Segoe UI",
+            Tahoma,
+            Arial,
+            sans-serif;
+
+        color: #ffffff;
+
+        background: #020817;
+
+        overflow-x: hidden;
+
+        opacity: 0;
+
+        animation:
+            pageEnter 1.2s ease forwards;
+    }
+
+
+    /* =====================================================
+       PAGE ENTRY
+    ===================================================== */
+
+    @keyframes pageEnter {
+
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+
+    }
+
+
+    /* =====================================================
+       FULL SCREEN BACKGROUND
+    ===================================================== */
+
+    body::before {
+
+        content: "";
+
+        position: fixed;
+
+        inset: 0;
+
+        z-index: -3;
+
+        background-image:
+
+            linear-gradient(
+                rgba(1, 10, 28, 0.18),
+                rgba(1, 10, 28, 0.42)
+            ),
+
+            url("/images/idba-hero.jpg");
+
+        background-size: cover;
+
+        background-position:
+            center center;
+
+        background-repeat: no-repeat;
+
+        background-attachment: fixed;
+
+        transform:
+            scale(1.08);
+
+        animation:
+            backgroundReveal 2.8s
+            cubic-bezier(.16,1,.3,1)
+            forwards;
+
+    }
+
+
+    @keyframes backgroundReveal {
+
+        from {
+
+            transform:
+                scale(1.12);
+
+            filter:
+                brightness(0.72)
+                blur(2px);
+
+        }
+
+        to {
+
+            transform:
+                scale(1.02);
+
+            filter:
+                brightness(1)
+                blur(0);
+
+        }
+
+    }
+
+
+    body::after {
+
+        content: "";
+
+        position: fixed;
+
+        inset: 0;
+
+        z-index: -2;
+
+        pointer-events: none;
+
+        background:
+
+            linear-gradient(
+                180deg,
+                rgba(2,8,23,0.05) 0%,
+                rgba(2,8,23,0.08) 35%,
+                rgba(2,8,23,0.38) 70%,
+                rgba(2,8,23,0.88) 100%
+            );
+
+    }
+
+
+    /* =====================================================
+       TOP BRAND
+    ===================================================== */
+
+    .top-brand {
+
+        width: 100%;
+
+        padding:
+            30px 25px 15px;
+
+        text-align: center;
+
+        animation:
+            brandDrop
+            1.1s
+            cubic-bezier(.16,1,.3,1)
+            0.15s
+            both;
+
+    }
+
+
+    @keyframes brandDrop {
+
+        from {
+
+            opacity: 0;
+
+            transform:
+                translateY(-45px)
+                scale(0.94);
+
+        }
+
+        to {
+
+            opacity: 1;
+
+            transform:
+                translateY(0)
+                scale(1);
+
+        }
+
+    }
+
+
+    .brand-logo {
+
+        display: inline-block;
+
+        font-size:
+            clamp(45px, 8vw, 82px);
+
+        font-weight: 900;
+
+        letter-spacing: 6px;
+
+        background:
+            linear-gradient(
+                90deg,
+                #ffffff,
+                #93c5fd,
+                #2563eb
+            );
+
+        -webkit-background-clip: text;
+
+        -webkit-text-fill-color:
+            transparent;
+
+        text-shadow:
+            0 0 35px
+            rgba(37,99,235,0.38);
+
+        margin: 0;
+
+        animation:
+            logoGlow
+            2.5s
+            ease-in-out
+            1.4s
+            infinite
+            alternate;
+
+    }
+
+
+    @keyframes logoGlow {
+
+        from {
+
+            filter:
+                drop-shadow(
+                    0 0 4px
+                    rgba(59,130,246,0.15)
+                );
+
+        }
+
+        to {
+
+            filter:
+                drop-shadow(
+                    0 0 18px
+                    rgba(59,130,246,0.42)
+                );
+
+        }
+
+    }
+
+
+    .brand-slogan {
+
+        margin-top: 5px;
+
+        font-size: 15px;
+
+        letter-spacing: 6px;
+
+        font-weight: 600;
+
+        color: #dbeafe;
+
+        opacity: 0;
+
+        animation:
+            fadeUp
+            0.9s
+            ease
+            0.7s
+            forwards;
+
+    }
+
+
+    /* =====================================================
+       HERO
+    ===================================================== */
+
+    .hero {
+
+        width:
+            min(1100px, 94%);
+
+        margin:
+            25px auto 45px;
+
+        min-height: 430px;
+
+        display: flex;
+
+        align-items: center;
+
+        padding: 55px;
+
+        border:
+            1px solid
+            rgba(96,165,250,0.5);
+
+        border-radius: 25px;
+
+        background:
+
+            linear-gradient(
+                90deg,
+                rgba(2,8,23,0.70),
+                rgba(2,8,23,0.24),
+                rgba(2,8,23,0.04)
+            );
+
+        box-shadow:
+
+            0 30px 80px
+            rgba(0,0,0,0.45),
+
+            inset 0 0 60px
+            rgba(37,99,235,0.08);
+
+        backdrop-filter:
+            blur(2px);
+
+        -webkit-backdrop-filter:
+            blur(2px);
+
+        overflow: hidden;
+
+        opacity: 0;
+
+        transform:
+            translateY(55px);
+
+        animation:
+            heroReveal
+            1.3s
+            cubic-bezier(.16,1,.3,1)
+            0.7s
+            forwards;
+
+    }
+
+
+    @keyframes heroReveal {
+
+        from {
+
+            opacity: 0;
+
+            transform:
+                translateY(55px)
+                scale(0.97);
+
+        }
+
+        to {
+
+            opacity: 1;
+
+            transform:
+                translateY(0)
+                scale(1);
+
+        }
+
+    }
+
+
+    .hero::after {
+
+        content: "";
+
+        position: absolute;
+
+        top: 0;
+
+        right: -100%;
+
+        width: 55%;
+
+        height: 100%;
+
+        background:
+            linear-gradient(
+                90deg,
+                transparent,
+                rgba(255,255,255,0.08),
+                transparent
+            );
+
+        transform:
+            skewX(-20deg);
+
+        animation:
+            lightSweep
+            2.2s
+            ease
+            1.7s
+            forwards;
+
+        pointer-events: none;
+
+    }
+
+
+    @keyframes lightSweep {
+
+        from {
+
+            right: -100%;
+
+        }
+
+        to {
+
+            right: 150%;
+
+        }
+
+    }
+
+
+    .hero-content {
+
+        max-width: 600px;
+
+        text-align: right;
+
+    }
+
+
+    .hero-small {
+
+        color: #60a5fa;
+
+        font-size: 18px;
+
+        font-weight: 700;
+
+        margin-bottom: 10px;
+
+        opacity: 0;
+
+        animation:
+            fadeRight
+            0.8s
+            ease
+            1.35s
+            forwards;
+
+    }
+
+
+    .hero-title {
+
+        font-size:
+            clamp(30px, 5vw, 55px);
+
+        line-height: 1.2;
+
+        margin:
+            0 0 20px;
+
+        font-weight: 900;
+
+        text-shadow:
+            0 5px 25px
+            rgba(0,0,0,0.55);
+
+        opacity: 0;
+
+        animation:
+            fadeRight
+            1s
+            cubic-bezier(.16,1,.3,1)
+            1.5s
+            forwards;
+
+    }
+
+
+    .hero-title span {
+
+        color: #60a5fa;
+
+    }
+
+
+    .hero-description {
+
+        color: #e2e8f0;
+
+        font-size: 18px;
+
+        line-height: 2;
+
+        margin: 0;
+
+        opacity: 0;
+
+        animation:
+            fadeRight
+            1s
+            ease
+            1.75s
+            forwards;
+
+    }
+
+
+    .hero-line {
+
+        width: 90px;
+
+        height: 4px;
+
+        background: #3b82f6;
+
+        margin:
+            22px 0 0 auto;
+
+        border-radius: 20px;
+
+        box-shadow:
+            0 0 20px #2563eb;
+
+        transform:
+            scaleX(0);
+
+        transform-origin: right;
+
+        animation:
+            lineReveal
+            0.8s
+            ease
+            2.15s
+            forwards;
+
+    }
+
+
+    @keyframes lineReveal {
+
+        to {
+
+            transform:
+                scaleX(1);
+
+        }
+
+    }
+
+
+    /* =====================================================
+       QUOTE
+    ===================================================== */
+
+    .quote-strip {
+
+        width:
+            min(950px, 90%);
+
+        margin:
+            0 auto 40px;
+
+        text-align: center;
+
+        padding:
+            18px 25px;
+
+        border-top:
+            1px solid
+            rgba(96,165,250,0.4);
+
+        border-bottom:
+            1px solid
+            rgba(96,165,250,0.4);
+
+        color: #dbeafe;
+
+        font-size: 18px;
+
+        font-weight: 600;
+
+        background:
+            rgba(2,8,23,0.12);
+
+        backdrop-filter:
+            blur(3px);
+
+        opacity: 0;
+
+        animation:
+            fadeUp
+            1s
+            ease
+            2.25s
+            forwards;
+
+    }
+
+
+    .quote-strip span {
+
+        color: #60a5fa;
+
+        margin:
+            0 10px;
+
+        transition:
+            color 0.25s ease;
+
+    }
+
+
+    .quote-strip span:hover {
+
+        color: #ffffff;
+
+    }
+
+
+    /* =====================================================
+       CONTACT CARD
+    ===================================================== */
+
+    .contact-card {
+
+        width:
+            min(850px, 92%);
+
+        margin:
+            0 auto 55px;
+
+        padding: 40px;
+
+        border-radius: 28px;
+
+        background:
+
+            linear-gradient(
+                135deg,
+                rgba(8,27,58,0.34),
+                rgba(2,12,30,0.20)
+            );
+
+        border:
+            1px solid
+            rgba(96,165,250,0.45);
+
+        box-shadow:
+
+            0 25px 70px
+            rgba(0,0,0,0.40),
+
+            inset 0 0 50px
+            rgba(37,99,235,0.05);
+
+        backdrop-filter:
+            blur(5px);
+
+        -webkit-backdrop-filter:
+            blur(5px);
+
+        opacity: 0;
+
+        transform:
+            translateY(70px);
+
+        animation:
+            contactReveal
+            1.25s
+            cubic-bezier(.16,1,.3,1)
+            2.45s
+            forwards;
+
+    }
+
+
+    @keyframes contactReveal {
+
+        from {
+
+            opacity: 0;
+
+            transform:
+                translateY(70px)
+                scale(0.96);
+
+        }
+
+        to {
+
+            opacity: 1;
+
+            transform:
+                translateY(0)
+                scale(1);
+
+        }
+
+    }
+
+
+    .contact-header {
+
+        text-align: center;
+
+        margin-bottom: 35px;
+
+    }
+
+
+    .contact-logo {
+
+        font-size: 55px;
+
+        font-weight: 900;
+
+        letter-spacing: 4px;
+
+        background:
+            linear-gradient(
+                90deg,
+                #ffffff,
+                #60a5fa,
+                #2563eb
+            );
+
+        -webkit-background-clip: text;
+
+        -webkit-text-fill-color:
+            transparent;
+
+        margin: 0;
+
+        opacity: 0;
+
+        animation:
+            logoAppear
+            0.9s
+            ease
+            2.9s
+            forwards;
+
+    }
+
+
+    @keyframes logoAppear {
+
+        from {
+
+            opacity: 0;
+
+            transform:
+                scale(0.7);
+
+            filter:
+                blur(8px);
+
+        }
+
+        to {
+
+            opacity: 1;
+
+            transform:
+                scale(1);
+
+            filter:
+                blur(0);
+
+        }
+
+    }
+
+
+    .contact-subtitle {
+
+        color: #bfdbfe;
+
+        font-size: 14px;
+
+        letter-spacing: 5px;
+
+        margin-top: 5px;
+
+        opacity: 0;
+
+        animation:
+            fadeUp
+            0.7s
+            ease
+            3.1s
+            forwards;
+
+    }
+
+
+    .contact-title {
+
+        font-size: 25px;
+
+        margin-top: 20px;
+
+        color: #ffffff;
+
+        opacity: 0;
+
+        animation:
+            fadeUp
+            0.7s
+            ease
+            3.25s
+            forwards;
+
+    }
+
+
+    .contact-title::after {
+
+        content: "";
+
+        display: block;
+
+        width: 65px;
+
+        height: 3px;
+
+        background: #3b82f6;
+
+        margin:
+            12px auto 0;
+
+        border-radius: 20px;
+
+        box-shadow:
+            0 0 15px #2563eb;
+
+        transform:
+            scaleX(0);
+
+        animation:
+            lineRevealCenter
+            0.6s
+            ease
+            3.5s
+            forwards;
+
+    }
+
+
+    @keyframes lineRevealCenter {
+
+        from {
+
+            transform:
+                scaleX(0);
+
+        }
+
+        to {
+
+            transform:
+                scaleX(1);
+
+        }
+
+    }
+
+
+    /* =====================================================
+       FORM
+    ===================================================== */
+
+    .form-group {
+
+        margin-bottom: 20px;
+
+        opacity: 0;
+
+        transform:
+            translateX(35px);
+
+    }
+
+
+    .form-group:nth-child(1) {
+
+        animation:
+            fieldReveal
+            0.65s
+            ease
+            3.65s
+            forwards;
+
+    }
+
+
+    .form-group:nth-child(2) {
+
+        animation:
+            fieldReveal
+            0.65s
+            ease
+            3.82s
+            forwards;
+
+    }
+
+
+    .form-group:nth-child(3) {
+
+        animation:
+            fieldReveal
+            0.65s
+            ease
+            3.99s
+            forwards;
+
+    }
+
+
+    .form-group:nth-child(4) {
+
+        animation:
+            fieldReveal
+            0.65s
+            ease
+            4.16s
+            forwards;
+
+    }
+
+
+    @keyframes fieldReveal {
+
+        from {
+
+            opacity: 0;
+
+            transform:
+                translateX(35px);
+
+        }
+
+        to {
+
+            opacity: 1;
+
+            transform:
+                translateX(0);
+
+        }
+
+    }
+
+
+    label {
+
+        display: block;
+
+        margin-bottom: 8px;
+
+        font-size: 15px;
+
+        font-weight: 700;
+
+        color: #e0f2fe;
+
+    }
+
+
+    input[type="text"],
+    input[type="tel"] {
+
+        width: 100%;
+
+        padding:
+            16px 18px;
+
+        border-radius: 12px;
+
+        border:
+            1px solid
+            rgba(96,165,250,0.55);
+
+        background:
+            rgba(2,12,30,0.18);
+
+        color: #ffffff;
+
+        font-size: 15px;
+
+        outline: none;
+
+        backdrop-filter:
+            blur(2px);
+
+        -webkit-backdrop-filter:
+            blur(2px);
+
+        transition:
+            0.3s ease;
+
+    }
+
+
+    input::placeholder {
+
+        color:
+            rgba(219,234,254,0.62);
+
+    }
+
+
+    input:hover {
+
+        border-color:
+            rgba(147,197,253,0.85);
+
+    }
+
+
+    input:focus {
+
+        border-color:
+            #60a5fa;
+
+        background:
+            rgba(2,12,30,0.12);
+
+        box-shadow:
+
+            0 0 0 3px
+            rgba(37,99,235,0.16),
+
+            0 0 25px
+            rgba(37,99,235,0.15);
+
+        transform:
+            translateY(-1px);
+
+    }
+
+
+    /* =====================================================
+       SEND BUTTON
+    ===================================================== */
+
+    .send-button {
+
+        width: 100%;
+
+        padding: 16px;
+
+        margin-top: 8px;
+
+        border: none;
+
+        border-radius: 12px;
+
+        cursor: pointer;
+
+        color: #ffffff;
+
+        font-size: 17px;
+
+        font-weight: 800;
+
+        background:
+
+            linear-gradient(
+                90deg,
+                #2563eb,
+                #3b82f6,
+                #2563eb
+            );
+
+        background-size:
+            200% 100%;
+
+        box-shadow:
+            0 10px 30px
+            rgba(37,99,235,0.3);
+
+        opacity: 0;
+
+        animation:
+            buttonReveal
+            0.8s
+            cubic-bezier(.16,1,.3,1)
+            4.45s
+            forwards;
+
+        transition:
+            0.3s ease;
+
+    }
+
+
+    @keyframes buttonReveal {
+
+        from {
+
+            opacity: 0;
+
+            transform:
+                translateY(25px);
+
+        }
+
+        to {
+
+            opacity: 1;
+
+            transform:
+                translateY(0);
+
+        }
+
+    }
+
+
+    .send-button:hover {
+
+        transform:
+            translateY(-3px);
+
+        background-position:
+            100% 0;
+
+        box-shadow:
+
+            0 15px 40px
+            rgba(37,99,235,0.5);
+
+    }
+
+
+    .send-button:active {
+
+        transform:
+            translateY(0)
+            scale(0.98);
+
+    }
+
+
+    .msg-status {
+
+        text-align: center;
+
+        margin-top: 15px;
+
+        min-height: 25px;
+
+        font-weight: bold;
+
+    }
+
+
+    .contact-footer {
+
+        margin-top: 30px;
+
+        padding-top: 20px;
+
+        border-top:
+            1px solid
+            rgba(96,165,250,0.25);
+
+        text-align: center;
+
+        color: #93c5fd;
+
+        font-size: 14px;
+
+        opacity: 0;
+
+        animation:
+            fadeUp
+            0.8s
+            ease
+            4.7s
+            forwards;
+
+    }
+
+
+    /* =====================================================
+       GALLERY
+    ===================================================== */
+
+    .section-title {
+
+        width:
+            min(1000px,92%);
+
+        margin:
+            0 auto 20px;
+
+        text-align: right;
+
+        font-size: 23px;
+
+        color: #ffffff;
+
+        font-weight: 800;
+
+        border-right:
+            4px solid #3b82f6;
+
+        padding-right: 14px;
+
+        text-shadow:
+            0 3px 15px
+            rgba(0,0,0,0.5);
+
+        opacity: 0;
+
+        animation:
+            fadeRight
+            0.9s
+            ease
+            4.8s
+            forwards;
+
+    }
+
+
+    .gallery-grid {
+
+        width:
+            min(1000px,92%);
+
+        margin:
+            0 auto 60px;
+
+        display: grid;
+
+        grid-template-columns:
+            repeat(
+                auto-fit,
+                minmax(250px,1fr)
+            );
+
+        gap: 22px;
+
+    }
+
+
+    .gallery-item {
+
+        overflow: hidden;
+
+        border-radius: 18px;
+
+        border:
+            1px solid
+            rgba(96,165,250,0.5);
+
+        background:
+            rgba(2,12,30,0.25);
+
+        backdrop-filter:
+            blur(5px);
+
+        -webkit-backdrop-filter:
+            blur(5px);
+
+        box-shadow:
+            0 15px 40px
+            rgba(0,0,0,0.35);
+
+        opacity: 0;
+
+        transform:
+            translateY(40px);
+
+        animation:
+            galleryReveal
+            0.8s
+            cubic-bezier(.16,1,.3,1)
+            5s
+            forwards;
+
+        transition:
+            0.35s ease;
+
+    }
+
+
+    @keyframes galleryReveal {
+
+        from {
+
+            opacity: 0;
+
+            transform:
+                translateY(40px)
+                scale(0.96);
+
+        }
+
+        to {
+
+            opacity: 1;
+
+            transform:
+                translateY(0)
+                scale(1);
+
+        }
+
+    }
+
+
+    .gallery-item:hover {
+
+        transform:
+            translateY(-8px)
+            scale(1.015);
+
+        border-color:
+            #60a5fa;
+
+        box-shadow:
+            0 25px 50px
+            rgba(37,99,235,0.28);
+
+    }
+
+
+    .gallery-item img {
+
+        width: 100%;
+
+        height: 190px;
+
+        object-fit: cover;
+
+        display: block;
+
+        transition:
+            transform 0.6s ease;
+
+    }
+
+
+    .gallery-item:hover img {
+
+        transform:
+            scale(1.06);
+
+    }
+
+
+    .gallery-desc {
+
+        padding: 14px;
+
+        font-size: 14px;
+
+        color: #dbeafe;
+
+        text-align: right;
+
+        background:
+            rgba(2,12,30,0.42);
+
+        border-top:
+            1px solid
+            rgba(96,165,250,0.25);
+
+    }
+
+
+    /* =====================================================
+       BOTTOM BRAND
+    ===================================================== */
+
+    .bottom-brand {
+
+        text-align: center;
+
+        padding:
+            40px 20px 55px;
+
+        background:
+
+            linear-gradient(
+                to bottom,
+                transparent,
+                rgba(1,7,20,0.82)
+            );
+
+        opacity: 0;
+
+        animation:
+            fadeUp
+            1s
+            ease
+            5.3s
+            forwards;
+
+    }
+
+
+    .bottom-logo {
+
+        font-size: 42px;
+
+        font-weight: 900;
+
+        letter-spacing: 5px;
+
+        color: #60a5fa;
+
+        text-shadow:
+            0 0 25px
+            rgba(37,99,235,0.35);
+
+    }
+
+
+    .bottom-slogan {
+
+        margin-top: 10px;
+
+        color: #e0f2fe;
+
+        font-size: 17px;
+
+        font-weight: 600;
+
+    }
+
+
+    .bottom-values {
+
+        margin-top: 15px;
+
+        color: #60a5fa;
+
+        font-size: 13px;
+
+        letter-spacing: 3px;
+
+    }
+
+
+    .copyright {
+
+        margin-top: 25px;
+
+        font-size: 11px;
+
+        color:
+            rgba(203,213,225,0.55);
+
+    }
+
+
+    /* =====================================================
+       GENERIC ANIMATION HELPERS
+    ===================================================== */
+
+    @keyframes fadeUp {
+
+        from {
+
+            opacity: 0;
+
+            transform:
+                translateY(25px);
+
+        }
+
+        to {
+
+            opacity: 1;
+
+            transform:
+                translateY(0);
+
+        }
+
+    }
+
+
+    @keyframes fadeRight {
+
+        from {
+
+            opacity: 0;
+
+            transform:
+                translateX(35px);
+
+        }
+
+        to {
+
+            opacity: 1;
+
+            transform:
+                translateX(0);
+
+        }
+
+    }
+
+
+    /* =====================================================
+       MOBILE
+    ===================================================== */
+
+    @media (max-width:700px) {
+
+        body::before {
+
+            background-position:
+                62% center;
+
+            background-attachment:
+                scroll;
+
+        }
+
+
+        .top-brand {
+
+            padding-top: 20px;
+
+        }
+
+
+        .brand-logo {
+
+            font-size: 52px;
+
+        }
+
+
+        .brand-slogan {
+
+            font-size: 11px;
+
+            letter-spacing: 3px;
+
+        }
+
+
+        .hero {
+
+            min-height: 430px;
+
+            padding:
+                30px 25px;
+
+            margin-top: 15px;
+
+            background:
+
+                linear-gradient(
+                    180deg,
+                    rgba(2,8,23,0.40),
+                    rgba(2,8,23,0.42)
+                );
+
+        }
+
+
+        .hero-content {
+
+            text-align: center;
+
+        }
+
+
+        .hero-line {
+
+            margin:
+                20px auto 0;
+
+        }
+
+
+        .hero-description {
+
+            font-size: 15px;
+
+        }
+
+
+        .contact-card {
+
+            padding:
+                28px 18px;
+
+            backdrop-filter:
+                blur(4px);
+
+        }
+
+
+        .contact-logo {
+
+            font-size: 45px;
+
+        }
+
+
+        .quote-strip {
+
+            font-size: 14px;
+
+            line-height: 2;
+
+        }
+
+
+        .gallery-grid {
+
+            grid-template-columns:
+                1fr;
+
+        }
+
+    }
+
+
+    /* =====================================================
+       REDUCE MOTION
+    ===================================================== */
+
+    @media (prefers-reduced-motion: reduce) {
+
+        *,
+        *::before,
+        *::after {
+
+            animation-duration:
+                0.01ms !important;
+
+            animation-iteration-count:
+                1 !important;
+
+            transition-duration:
+                0.01ms !important;
+
+        }
+
+    }
+
+</style>
+```
+
+</head>
+
+<body>
+
+```
+<!-- =====================================================
+     TOP BRAND
+===================================================== -->
+
+<header class="top-brand">
+
+    <div class="brand-logo">
+        IDBA
+    </div>
+
+    <div class="brand-slogan">
+        DREAM · BUILD · GROW
+    </div>
+
+</header>
+
+
+<!-- =====================================================
+     HERO
+===================================================== -->
+
+<section class="hero">
+
+    <div class="hero-content">
+
+        <div class="hero-small">
+            IDBA
+        </div>
+
+        <h1 class="hero-title">
+
+            أفكار اليوم ..
+
+            <span>
+                تبني مستقبل الغد
+            </span>
+
+        </h1>
+
+        <p class="hero-description">
+
+            نؤمن أن كل فكرة عظيمة تبدأ بخطوة صغيرة،
+            ومع الرؤية والتطوير نصنع مشاريع تبني
+            مستقبلًا أفضل.
+
+        </p>
+
+        <div class="hero-line"></div>
+
+    </div>
+
+</section>
+
+
+<!-- =====================================================
+     VALUES
+===================================================== -->
+
+<div class="quote-strip">
+
+    <span>تصميم</span>
+
+    •
+
+    <span>تطوير</span>
+
+    •
+
+    <span>استثمار</span>
+
+    •
+
+    <span>مستقبل</span>
+
+</div>
+
+
+<!-- =====================================================
+     CONTACT
+===================================================== -->
+
+<section class="contact-card">
+
+
+    <div class="contact-header">
+
+        <h2 class="contact-logo">
+            IDBA
+        </h2>
+
+        <div class="contact-subtitle">
+            DREAM · BUILD · GROW
+        </div>
+
+        <div class="contact-title">
+            تواصل معنا
+        </div>
+
+    </div>
+
+
+    <form id="messageForm">
+
+
+        <div class="form-group">
+
+            <label for="phoneInput">
+                رقم التليفون
+            </label>
+
+            <input
+                type="tel"
+                id="phoneInput"
+                placeholder="01xxxxxxxxx"
+                required
+            >
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="messageInput">
+                نص الرسالة
+            </label>
+
+            <input
+                type="text"
+                id="messageInput"
+                placeholder="اكتب رسالتك هنا..."
+                required
+            >
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="countryInput">
+                الدولة
+            </label>
+
+            <input
+                type="text"
+                id="countryInput"
+                placeholder="أدخل اسم الدولة..."
+                required
+            >
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="cityInput">
+                المدينة
+            </label>
+
+            <input
+                type="text"
+                id="cityInput"
+                placeholder="أدخل اسم المدينة..."
+                required
+            >
+
+        </div>
+
+
+        <button
+            type="submit"
+            class="send-button"
+        >
+            إرسال
+        </button>
+
+
+    </form>
+
+
+    <div
+        id="messageStatus"
+        class="msg-status"
+    ></div>
+
+
+    <div class="contact-footer">
+
+        نحن لا نبني مشاريع فقط...
+
+        <br>
+
+        نحن نبني مستقبلًا.
+
+    </div>
+
+
+</section>
+
+
+<!-- =====================================================
+     GALLERY
+===================================================== -->
+
+<div
+    class="section-title"
+    id="galleryTitle"
+    style="display:none;"
+>
+    معرض المشاريع والأعمال
+</div>
+
+
+<div
+    class="gallery-grid"
+    id="mainWebsiteGallery"
+></div>
+
+
+<!-- =====================================================
+     FOOTER
+===================================================== -->
+
+<footer class="bottom-brand">
+
+    <div class="bottom-logo">
+        IDBA
+    </div>
+
+    <div class="bottom-slogan">
+
+        أفكار اليوم ..
+        تبني مستقبل الغد
+
+    </div>
+
+    <div class="bottom-values">
+
+        DREAM · BUILD · GROW
+
+    </div>
+
+    <div class="copyright">
+
+        © IDBA — جميع الحقوق محفوظة
+
+    </div>
+
+</footer>
+
+
+<!-- =====================================================
+     JAVASCRIPT
+===================================================== -->
+
+<script>
+
+
+    /* =====================================================
+       SOCKET
+    ===================================================== */
+
     const socket = io();
 
-    socket.on("new-visit", data => {
-      const el = document.getElementById("visits");
-      el.innerHTML += `<p>Visitor: ${data.ip} | ${data.country} - ${data.city} | ${data.device} | Page: ${data.page}</p>`;
-    });
 
-    socket.on("new-message", data => {
-      const el = document.getElementById("messages");
-      el.innerHTML += `<p>${data.time} - ${data.message}</p>`;
-    });
+    /* =====================================================
+       LOAD CONTENT
+    ===================================================== */
 
-    socket.on("new-image", data => {
-      const el = document.getElementById("images");
-      el.innerHTML += `<p>${data.time} - ${data.originalName}</p>`;
-    });
-  </script>
+    async function loadContent() {
+
+        try {
+
+            const res =
+                await fetch("/api/images");
+
+            const images =
+                await res.json();
+
+            renderLayout(images);
+
+        }
+
+        catch (error) {
+
+            console.error(
+                "Failed to load images:",
+                error
+            );
+
+        }
+
+    }
+
+
+    loadContent();
+
+
+    /* =====================================================
+       RENDER GALLERY
+    ===================================================== */
+
+    function renderLayout(images) {
+
+        const gallery =
+            document.getElementById(
+                "mainWebsiteGallery"
+            );
+
+
+        const galleryTitle =
+            document.getElementById(
+                "galleryTitle"
+            );
+
+
+        gallery.innerHTML = "";
+
+
+        const bottomImages =
+            images.filter(
+                img =>
+                    img.position === "bottom"
+            );
+
+
+        if (
+            bottomImages.length > 0
+        ) {
+
+            galleryTitle.style.display =
+                "block";
+
+
+            bottomImages.forEach(
+                (img, index) => {
+
+                    const item =
+                        document.createElement(
+                            "div"
+                        );
+
+
+                    item.className =
+                        "gallery-item";
+
+
+                    item.style.animationDelay =
+                        `${5 + (index * 0.15)}s`;
+
+
+                    item.innerHTML = `
+
+                        <img
+                            src="${img.path}"
+                            alt="IDBA Project"
+                            loading="lazy"
+                        >
+
+                        <div class="gallery-desc">
+
+                            ${
+                                img.desc || ""
+                            }
+
+                        </div>
+
+                    `;
+
+
+                    gallery.appendChild(item);
+
+                }
+            );
+
+        }
+
+        else {
+
+            galleryTitle.style.display =
+                "none";
+
+        }
+
+    }
+
+
+    /* =====================================================
+       LIVE GALLERY
+    ===================================================== */
+
+    socket.on(
+        "refresh-gallery",
+        (images) => {
+
+            renderLayout(images);
+
+        }
+    );
+
+
+    /* =====================================================
+       TRACK VISITOR
+    ===================================================== */
+
+    fetch(
+        "/track?page=" +
+        encodeURIComponent(
+            window.location.pathname
+        )
+    )
+    .catch(
+        () => {}
+    );
+
+
+    /* =====================================================
+       MESSAGE FORM
+    ===================================================== */
+
+    document
+        .getElementById("messageForm")
+        .addEventListener(
+            "submit",
+            async (e) => {
+
+                e.preventDefault();
+
+
+                const msg =
+                    document.getElementById(
+                        "messageInput"
+                    );
+
+
+                const phone =
+                    document.getElementById(
+                        "phoneInput"
+                    );
+
+
+                const country =
+                    document.getElementById(
+                        "countryInput"
+                    );
+
+
+                const city =
+                    document.getElementById(
+                        "cityInput"
+                    );
+
+
+                const status =
+                    document.getElementById(
+                        "messageStatus"
+                    );
+
+
+                status.textContent =
+                    "جاري الإرسال...";
+
+                status.style.color =
+                    "#93c5fd";
+
+
+                try {
+
+                    const res =
+                        await fetch(
+                            "/message",
+                            {
+
+                                method:
+                                    "POST",
+
+                                headers: {
+
+                                    "Content-Type":
+                                        "application/json"
+
+                                },
+
+                                body:
+                                    JSON.stringify({
+
+                                        message:
+                                            msg.value,
+
+                                        phone:
+                                            phone.value,
+
+                                        country:
+                                            country.value,
+
+                                        city:
+                                            city.value
+
+                                    })
+
+                            }
+                        );
+
+
+                    const data =
+                        await res.json();
+
+
+                    if (
+                        data.success
+                    ) {
+
+                        status.textContent =
+                            "تم إرسال رسالتك بنجاح ✓";
+
+                        status.style.color =
+                            "#10b981";
+
+
+                        msg.value = "";
+
+                        phone.value = "";
+
+                        country.value = "";
+
+                        city.value = "";
+
+
+                    }
+
+                    else {
+
+                        status.textContent =
+                            "تعذر إرسال الرسالة.";
+
+                        status.style.color =
+                            "#ef4444";
+
+                    }
+
+
+                }
+
+                catch (error) {
+
+                    status.textContent =
+                        "خطأ في الاتصال بالخادم.";
+
+                    status.style.color =
+                        "#ef4444";
+
+                }
+
+            }
+        );
+
+
+</script>
+```
+
 </body>
+
 </html>
+

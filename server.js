@@ -1,18 +1,14 @@
-﻿import "dotenv/config";
-import express from "express";
-import cors from "cors";
-import http from "http";
-import path from "path";
-import fs from "fs";
-import { fileURLToPath } from "url";
-import { Server } from "socket.io";
-import { createClient } from "@supabase/supabase-js";
-import requestIp from "request-ip";
-import multer from "multer";
-import crypto from "crypto"; 
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+﻿require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const http = require("http");
+const path = require("path");
+const fs = require("fs");
+const { Server } = require("socket.io");
+const { createClient } = require("@supabase/supabase-js");
+const requestIp = require("request-ip");
+const multer = require("multer");
+const crypto = require("crypto");
 
 const app = express();
 const server = http.createServer(app);
@@ -138,9 +134,7 @@ async function getGeoData(ip) {
     if (data && data.status === "success") {
       return { country: data.country || "Unknown", city: data.city || "Unknown" };
     }
-  } catch (error) {
-    // تم كتم الخطأ لمنع خروج معلومات السيرفر للكونسول
-  }
+  } catch (error) {}
   return { country: "Unknown", city: "Unknown" };
 }
 
@@ -185,7 +179,9 @@ app.post("/api/upload", upload.single("image"), async (req, res) => {
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`Server connected running on port: ${PORT}`);
+app.get("/", (req, res) => {
+  res.send("🚀 السيرفر يعمل بنجاح تـام ومحمي محلـياً!");
 });
+
+module.exports = app;
 

@@ -57,7 +57,7 @@ app.use(requestIp.mw());
 // =========================
 
 const publicPath = path.join(__dirname, "public");
-const uploadsPath = path.join(__dirname, "uploads");
+const uploadsPath = path.join("/tmp", "uploads");
 
 if (!fs.existsSync(uploadsPath)) {
   fs.mkdirSync(uploadsPath, {
@@ -485,3 +485,4 @@ if (require.main === module) {
     );
   });
 }
+

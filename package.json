@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "Advanced server with tracking and real-time features",
   "main": "server.js",
-  "type": "module",
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
@@ -35,3 +34,4 @@
     "prettier": "^3.9.6"
   }
 }
+
